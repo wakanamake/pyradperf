@@ -28,13 +28,13 @@ async def send(udp, pkt, n, semaphore: asyncio.Semaphore):
         await asyncio.sleep(1)
         sendAccountingPkt(udp, pkt, n, "Stop")
 
-async def async_main(n):
+async def async_main(server, secret, n):
     count = 0
     max = n
     s = asyncio.Semaphore(value=n)
 
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
-    radclient=Client(server="172.17.150.27", secret=six.b("allot"), dict=Dictionary("dictionary"))
+    radclient=Client(server=server, secret=six.b(secret), dict=Dictionary("dictionary"))
     pkt = radclient.CreateAcctPacket(code=pyrad.packet.AccountingRequest)
 
     while True:
@@ -46,10 +46,12 @@ async def async_main(n):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
     parser.add_argument("-c", "--count", type=int)
+    parser.add_argument("-s", "--server", type=str)
+    parser.add_argument("-p", "--secret", type=str)
     args = parser.parse_args()
 
-    print("target pps: "+str(args.count))
+    print("target:"+args.server+", pps: "+str(args.count*2))
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(async_main(args.count))
+    loop.run_until_complete(async_main(args.server, args.secret, args.count))
     loop.close()
