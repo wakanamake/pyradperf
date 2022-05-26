@@ -28,7 +28,7 @@ async def send(udp, pkt, n, semaphore: asyncio.Semaphore):
         await asyncio.sleep(1)
         sendAccountingPkt(udp, pkt, n, "Stop")
 
-async def async_main(server, secret, n):
+async def async_main(server, secret, n, loop):
     count = 0
     max = n
     s = asyncio.Semaphore(value=n)
@@ -40,18 +40,20 @@ async def async_main(server, secret, n):
     while True:
         cors = [send(udp, pkt, i, semaphore=s) for i in range(count,max)]
         await asyncio.gather(*cors)
-        count+=n
-        max+=n
+        if not loop:
+            count+=n
+            max+=n
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
     parser.add_argument("-c", "--count", type=int, default=10)
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
     parser.add_argument("-p", "--secret", type=str, default="secret")
+    parser.add_argument("-l", "--loop", action="store_true")
     args = parser.parse_args()
 
     print("target:"+args.server+", pps: "+str(args.count*2))
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(async_main(args.server, args.secret, args.count))
+    loop.run_until_complete(async_main(args.server, args.secret, args.count, args.loop))
     loop.close()
