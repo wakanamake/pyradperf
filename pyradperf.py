@@ -45,9 +45,9 @@ async def async_main(server, secret, n):
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
-    parser.add_argument("-c", "--count", type=int)
-    parser.add_argument("-s", "--server", type=str)
-    parser.add_argument("-p", "--secret", type=str)
+    parser.add_argument("-c", "--count", type=int, default=10)
+    parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
+    parser.add_argument("-p", "--secret", type=str, default="secret")
     args = parser.parse_args()
 
     print("target:"+args.server+", pps: "+str(args.count*2))
