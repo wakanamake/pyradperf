@@ -110,7 +110,7 @@ if __name__ == '__main__':
     cnf.setStartIp(args.start)
     cnf.setPacket()
 
-    print("target:"+args.server+", pps: "+str(args.count*2))
+    print("target:"+args.server+", Total packets: "+str(args.count*2*args.duration))
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(async_main(cnf))
