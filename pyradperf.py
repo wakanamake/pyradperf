@@ -1,7 +1,6 @@
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
 import pyrad.packet
-from itertools import count
 import six
 import asyncio
 import socket
@@ -38,22 +37,31 @@ class Config:
         server = self.getServerStr()
         radclient = Client(server=server, secret=self.secret, dict=Dictionary("dictionary"))
         self.pkt = radclient.CreateAcctPacket(code=pyrad.packet.AccountingRequest)
+    
+    def setAccountingPkt(self, n):
+        self.pkt["User-Name"] = self.usernameBase + str(n)
+        self.pkt["Calling-Station-Id"] = self.msisdnBase + str(n)
+        self.pkt["Framed-IP-Address"] = self.getNextIpStr(n)
+        self.pkt["Acct-Session-Id"]=str(n)
 
-def sendAccountingPkt(udp, Config, n, type):
-    Config.pkt["Acct-Status-Type"] = type
-    Config.pkt["User-Name"] = Config.usernameBase + str(n)
-    Config.pkt["Calling-Station-Id"] = Config.msisdnBase + str(n)
-    Config.pkt["Framed-IP-Address"] = Config.getNextIpStr(n)
-    Config.pkt["Acct-Session-Id"]=str(n)
-    server = Config.getServerStr()
+    def setAccountingType(self, string):
+        self.pkt["Acct-Status-Type"] = string
 
-    udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
 
 async def send(udp, Config, n, semaphore: asyncio.Semaphore):
+    server = Config.getServerStr()
+
     async with semaphore:
-        sendAccountingPkt(udp, Config, n, "Start")
+        Config.setAccountingPkt(n)
+
+        Config.setAccountingType("Start")
+        udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
+
         await asyncio.sleep(1)
-        sendAccountingPkt(udp, Config, n, "Stop")
+
+        Config.setAccountingType("Stop")
+        udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
+
 
 async def async_main(Config):
     count = Config.count
@@ -71,6 +79,7 @@ async def async_main(Config):
         if not Config.loop:
             count+=count
             max+=count
+    
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
