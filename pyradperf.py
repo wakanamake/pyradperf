@@ -9,13 +9,14 @@ import argparse
 
 class Config:
     def __init__(self) -> None:
-        self.count = 10
-        self.startIp = ipaddress.ip_address('10.0.0.1')
+        self.count = None
+        self.duration = None
+        self.startIp = None
         self.usernameBase = "hoge-"
         self.msisdnBase = "0123456"
-        self.server = ""
+        self.server = None
         self.secret = six.b("")
-        self.pkt = ""
+        self.pkt = None
         self.loop = False
 
     def setSecret(self, string):
@@ -53,12 +54,12 @@ async def send(udp, Config, n, semaphore: asyncio.Semaphore):
 
     async with semaphore:
         Config.setAccountingPkt(n)
-
         Config.setAccountingType("Start")
         udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
 
         await asyncio.sleep(1)
 
+        Config.setAccountingPkt(n)
         Config.setAccountingType("Stop")
         udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
 
@@ -73,17 +74,26 @@ async def async_main(Config):
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
     s = asyncio.Semaphore(value=count)
 
-    while True:
-        cors = [send(udp, Config, i, semaphore=s) for i in range(start,max)]
-        await asyncio.gather(*cors)
-        if not Config.loop:
-            count+=count
-            max+=count
+    if Config.duration > 0:
+        for n in range(Config.duration):
+            cors = [send(udp, Config, i, semaphore=s) for i in range(start,max)]
+            await asyncio.gather(*cors)
+            if not Config.loop:
+                start+=count
+                max+=count
+    else:
+        while True:
+            cors = [send(udp, Config, i, semaphore=s) for i in range(start,max)]
+            await asyncio.gather(*cors)
+            if not Config.loop:
+                start+=count
+                max+=count
     
-    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
-    parser.add_argument("-c", "--count", type=int, default=10)
+    parser.add_argument("-c", "--count", type=int, default=0)
+    parser.add_argument("-d", "--duration", type=int, default=10)
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
     parser.add_argument("-p", "--secret", type=str, default="secret")
     parser.add_argument("-sip", "--start", type=str, default="10.0.0.1")
@@ -93,6 +103,7 @@ if __name__ == '__main__':
 
     cnf = Config()
     cnf.count = args.count
+    cnf.duration = args.duration
     cnf.loop = args.loop
     cnf.setServer(args.server)
     cnf.setSecret(args.secret)
