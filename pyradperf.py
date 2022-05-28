@@ -53,7 +53,7 @@ class Config:
 
 async def send(udp, Config, n, semaphore: asyncio.Semaphore):
     server = Config.getServerStr()
-    usec = Config.delay*0.00001
+    usec = Config.delay*0.000001
 
     async with semaphore:
         Config.setAccountingPkt(n)
@@ -75,6 +75,7 @@ async def send(udp, Config, n, semaphore: asyncio.Semaphore):
 
         await asyncio.sleep(1)
         udp.sendto(pktStop, (server, 1813))
+        await asyncio.sleep(1)
 
 
 async def async_main(Config):
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     cnf.setStartIp(args.start)
     cnf.setPacket()
 
-    print("target:"+args.server+", Total packets: "+str(args.count*2*args.times))
+    print("target:"+args.server+", Total packets: "+str(args.count*3*args.times))
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(async_main(cnf))
