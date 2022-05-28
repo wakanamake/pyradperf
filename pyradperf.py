@@ -106,7 +106,7 @@ async def async_main(Config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
-    parser.add_argument("-c", "--count", type=int, default=0)
+    parser.add_argument("-c", "--count", type=int, default=100)
     parser.add_argument("-t", "--times", type=int, default=10)
     parser.add_argument("-d", "--delay", type=int, default=10)
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
