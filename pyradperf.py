@@ -42,7 +42,7 @@ class Config:
         self.pkt = radclient.CreateAcctPacket(code=pyrad.packet.AccountingRequest)
     
     def setAccountingPkt(self, n):
-        self.pkt["User-Name"] = self.usernameBase + str(n)
+        #self.pkt["User-Name"] = self.usernameBase + str(n)
         self.pkt["Calling-Station-Id"] = self.msisdnBase + str(n)
         self.pkt["Framed-IP-Address"] = self.getNextIpStr(n)
         self.pkt["Acct-Session-Id"]=str(n)
@@ -53,18 +53,28 @@ class Config:
 
 async def send(udp, Config, n, semaphore: asyncio.Semaphore):
     server = Config.getServerStr()
+    usec = Config.delay*0.00001
 
     async with semaphore:
         Config.setAccountingPkt(n)
+
         Config.setAccountingType("Start")
-        time.sleep(Config.delay*0.001)
-        udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
+        pktStart = Config.pkt.RequestPacket()
+
+        Config.setAccountingType("Interim-Update")
+        pktUpdate = Config.pkt.RequestPacket()
+
+        Config.setAccountingType("Stop")
+        pktStop = Config.pkt.RequestPacket()
+
+        time.sleep(usec)
+        udp.sendto(pktStart, (server, 1813))
 
         await asyncio.sleep(1)
+        udp.sendto(pktUpdate, (server, 1813))
 
-        Config.setAccountingPkt(n)
-        Config.setAccountingType("Stop")
-        udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
+        await asyncio.sleep(1)
+        udp.sendto(pktStop, (server, 1813))
 
 
 async def async_main(Config):
