@@ -6,11 +6,13 @@ import asyncio
 import socket
 import ipaddress
 import argparse
+import time
 
 class Config:
     def __init__(self) -> None:
         self.count = None
-        self.duration = None
+        self.times = None
+        self.delay = None
         self.startIp = None
         self.usernameBase = "hoge-"
         self.msisdnBase = "0123456"
@@ -55,6 +57,7 @@ async def send(udp, Config, n, semaphore: asyncio.Semaphore):
     async with semaphore:
         Config.setAccountingPkt(n)
         Config.setAccountingType("Start")
+        time.sleep(Config.delay*0.001)
         udp.sendto(Config.pkt.RequestPacket(), (server, 1813))
 
         await asyncio.sleep(1)
@@ -74,8 +77,8 @@ async def async_main(Config):
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
     s = asyncio.Semaphore(value=count)
 
-    if Config.duration > 0:
-        for n in range(Config.duration):
+    if Config.times > 0:
+        for n in range(Config.times):
             cors = [send(udp, Config, i, semaphore=s) for i in range(start,max)]
             await asyncio.gather(*cors)
             if not Config.loop:
@@ -93,7 +96,8 @@ async def async_main(Config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
     parser.add_argument("-c", "--count", type=int, default=0)
-    parser.add_argument("-d", "--duration", type=int, default=10)
+    parser.add_argument("-t", "--times", type=int, default=10)
+    parser.add_argument("-d", "--delay", type=int, default=10)
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
     parser.add_argument("-p", "--secret", type=str, default="secret")
     parser.add_argument("-sip", "--start", type=str, default="10.0.0.1")
@@ -103,14 +107,15 @@ if __name__ == '__main__':
 
     cnf = Config()
     cnf.count = args.count
-    cnf.duration = args.duration
+    cnf.times = args.times
+    cnf.delay = args.delay
     cnf.loop = args.loop
     cnf.setServer(args.server)
     cnf.setSecret(args.secret)
     cnf.setStartIp(args.start)
     cnf.setPacket()
 
-    print("target:"+args.server+", Total packets: "+str(args.count*2*args.duration))
+    print("target:"+args.server+", Total packets: "+str(args.count*2*args.times))
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(async_main(cnf))
