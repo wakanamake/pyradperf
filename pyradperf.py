@@ -75,7 +75,7 @@ async def send(udp, Config, n, semaphore: asyncio.Semaphore):
 
         await asyncio.sleep(1)
         udp.sendto(pktStop, (server, 1813))
-        await asyncio.sleep(1)
+        #await asyncio.sleep(1)
 
 
 async def async_main(Config):
