@@ -56,6 +56,7 @@ class Config:
 async def send(udp, Config, n):
     server = Config.getServerStr()
     usec = Config.delay*0.000001
+    wait = Config.wait*0.1
 
     Config.setAccountingPkt(n)
 
@@ -71,12 +72,12 @@ async def send(udp, Config, n):
     time.sleep(usec)
 
     udp.sendto(pktStart, (server, 1813))
-    await asyncio.sleep(Config.wait)
+    await asyncio.sleep(wait)
 
     time.sleep(usec)
 
     udp.sendto(pktUpdate, (server, 1813))
-    await asyncio.sleep(Config.wait)
+    await asyncio.sleep(wait)
 
     time.sleep(usec)
 
@@ -115,10 +116,10 @@ async def async_main(Config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
-    parser.add_argument("-c", "--count", type=int, default=100)
-    parser.add_argument("-t", "--times", type=int, default=10)
-    parser.add_argument("-d", "--delay", type=int, default=10)
-    parser.add_argument("-w", "--wait", type=int, default=1)
+    parser.add_argument("-c", "--count", type=int, default=100, help="how many of the same type of accounting packet will be sent before sending the next type")
+    parser.add_argument("-t", "--times", type=int, default=10, help="number of repeating")
+    parser.add_argument("-d", "--delay", type=int, default=10, help="delay between sending each packet (unit: 1 usec) NOTE: it might not be accurate if you specify a value <1000.")
+    parser.add_argument("-w", "--wait", type=int, default=1, help="timer to wait to send the next type of accounting packet (unit: 100 msec)")
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
     parser.add_argument("-p", "--secret", type=str, default="secret")
     parser.add_argument("-sip", "--start", type=str, default="10.0.0.1")
@@ -136,8 +137,8 @@ if __name__ == '__main__':
     cnf.setSecret(args.secret)
     cnf.setStartIp(args.start)
     cnf.setPacket()
-
-    print("target:"+args.server+", Total packets: "+str(args.count*3*args.times))
+    if cnf.loop == False:
+        print("target:"+args.server+", Total packets: "+str(args.count*3*args.times))
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(async_main(cnf))
