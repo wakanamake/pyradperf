@@ -14,6 +14,7 @@ class Config:
         self.count = None
         self.times = None
         self.delay = None
+        self.wait = None
         self.startIp = None
         self.usernameBase = "hoge-"
         self.msisdnBase = "0123456"
@@ -70,10 +71,10 @@ async def send(udp, Config, n):
     time.sleep(usec)
 
     udp.sendto(pktStart, (server, 1813))
-    await asyncio.sleep(1)
+    await asyncio.sleep(Config.wait)
 
     udp.sendto(pktUpdate, (server, 1813))
-    await asyncio.sleep(1)
+    await asyncio.sleep(Config.wait)
 
     udp.sendto(pktStop, (server, 1813))
 
@@ -113,6 +114,7 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--count", type=int, default=100)
     parser.add_argument("-t", "--times", type=int, default=10)
     parser.add_argument("-d", "--delay", type=int, default=10)
+    parser.add_argument("-w", "--wait", type=int, default=1)
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
     parser.add_argument("-p", "--secret", type=str, default="secret")
     parser.add_argument("-sip", "--start", type=str, default="10.0.0.1")
@@ -124,6 +126,7 @@ if __name__ == '__main__':
     cnf.count = args.count
     cnf.times = args.times
     cnf.delay = args.delay
+    cnf.wait = args.wait
     cnf.loop = args.loop
     cnf.setServer(args.server)
     cnf.setSecret(args.secret)
