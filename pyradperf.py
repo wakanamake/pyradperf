@@ -73,8 +73,12 @@ async def send(udp, Config, n):
     udp.sendto(pktStart, (server, 1813))
     await asyncio.sleep(Config.wait)
 
+    time.sleep(usec)
+
     udp.sendto(pktUpdate, (server, 1813))
     await asyncio.sleep(Config.wait)
+
+    time.sleep(usec)
 
     udp.sendto(pktStop, (server, 1813))
 
