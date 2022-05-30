@@ -7,6 +7,7 @@ import socket
 import ipaddress
 import argparse
 import time
+import datetime
 
 class Config:
     def __init__(self) -> None:
@@ -51,31 +52,30 @@ class Config:
         self.pkt["Acct-Status-Type"] = string
 
 
-async def send(udp, Config, n, semaphore: asyncio.Semaphore):
+async def send(udp, Config, n):
     server = Config.getServerStr()
     usec = Config.delay*0.000001
 
-    async with semaphore:
-        Config.setAccountingPkt(n)
+    Config.setAccountingPkt(n)
 
-        Config.setAccountingType("Start")
-        pktStart = Config.pkt.RequestPacket()
+    Config.setAccountingType("Start")
+    pktStart = Config.pkt.RequestPacket()
 
-        Config.setAccountingType("Interim-Update")
-        pktUpdate = Config.pkt.RequestPacket()
+    Config.setAccountingType("Interim-Update")
+    pktUpdate = Config.pkt.RequestPacket()
 
-        Config.setAccountingType("Stop")
-        pktStop = Config.pkt.RequestPacket()
+    Config.setAccountingType("Stop")
+    pktStop = Config.pkt.RequestPacket()
 
-        time.sleep(usec)
-        udp.sendto(pktStart, (server, 1813))
+    time.sleep(usec)
 
-        await asyncio.sleep(1)
-        udp.sendto(pktUpdate, (server, 1813))
+    udp.sendto(pktStart, (server, 1813))
+    await asyncio.sleep(1)
 
-        await asyncio.sleep(1)
-        udp.sendto(pktStop, (server, 1813))
-        #await asyncio.sleep(1)
+    udp.sendto(pktUpdate, (server, 1813))
+    await asyncio.sleep(1)
+
+    udp.sendto(pktStop, (server, 1813))
 
 
 async def async_main(Config):
@@ -86,23 +86,27 @@ async def async_main(Config):
     max = count
 
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM);
-    s = asyncio.Semaphore(value=count)
 
+    startDT = datetime.datetime.now()
+    print("Start sending at " + str(startDT))
     if Config.times > 0:
         for n in range(Config.times):
-            cors = [send(udp, Config, i, semaphore=s) for i in range(start,max)]
+            cors = [send(udp, Config, i) for i in range(start,max)]
             await asyncio.gather(*cors)
             if not Config.loop:
                 start+=count
                 max+=count
     else:
         while True:
-            cors = [send(udp, Config, i, semaphore=s) for i in range(start,max)]
+            cors = [send(udp, Config, i) for i in range(start,max)]
             await asyncio.gather(*cors)
             if not Config.loop:
                 start+=count
                 max+=count
-    
+
+    endDT = datetime.datetime.now()
+    print("All packets have been sent at " + str(endDT))
+    print("Running duration: " + str(endDT-startDT))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send RADIUS accouting packets')
