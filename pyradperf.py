@@ -22,6 +22,8 @@ class Config:
         self.secret = six.b("")
         self.pkt = None
         self.loop = False
+        self.noInterim = False
+        self.noStop = False
 
     def setSecret(self, string):
         self.secret = six.b(string)
@@ -74,14 +76,16 @@ async def send(udp, Config, n):
     udp.sendto(pktStart, (server, 1813))
     await asyncio.sleep(wait)
 
-    time.sleep(usec)
+    if Config.noInterim != True:
+        time.sleep(usec)
 
-    udp.sendto(pktUpdate, (server, 1813))
-    await asyncio.sleep(wait)
+        udp.sendto(pktUpdate, (server, 1813))
+        await asyncio.sleep(wait)
 
-    time.sleep(usec)
+    if Config.noStop != True:
+        time.sleep(usec)
 
-    udp.sendto(pktStop, (server, 1813))
+        udp.sendto(pktStop, (server, 1813))
 
 
 async def async_main(Config):
@@ -124,6 +128,9 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--secret", type=str, default="secret")
     parser.add_argument("-sip", "--start", type=str, default="10.0.0.1")
 
+    parser.add_argument("-ni", "--nointerim", action="store_true")
+    parser.add_argument("-ns", "--nostop", action="store_true")
+
     parser.add_argument("-l", "--loop", action="store_true")
     args = parser.parse_args()
 
@@ -132,13 +139,22 @@ if __name__ == '__main__':
     cnf.times = args.times
     cnf.delay = args.delay
     cnf.wait = args.wait
+    cnf.noInterim = args.nointerim
+    cnf.noStop = args.nostop
     cnf.loop = args.loop
     cnf.setServer(args.server)
     cnf.setSecret(args.secret)
     cnf.setStartIp(args.start)
     cnf.setPacket()
+    
+    Times = 1
+    if cnf.noInterim == False:
+        Times += 1
+    if cnf.noStop == False:
+        Times += 1
+
     if cnf.loop == False:
-        print("target:"+args.server+", Total packets: "+str(args.count*3*args.times))
+        print("target:"+args.server+", Total packets: "+str(args.count*Times*args.times))
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(async_main(cnf))
