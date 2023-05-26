@@ -8,7 +8,6 @@ import ipaddress
 import argparse
 import time
 import datetime
-import random
 
 class Config:
     def __init__(self) -> None:
@@ -23,22 +22,22 @@ class Config:
         self.secret = six.b("")
         self.pkt = None
         self.loop = False
+        self.noStart = False
         self.noInterim = False
         self.noStop = False
 
-        #random_number = random.randint(1,100)
         current_time = int(time.time())
         self.unique_id = hex(current_time)[2:]
 
     def setSecret(self, string):
         self.secret = six.b(string)
-
+    
     def setStartIp(self, string):
         self.startIp = ipaddress.ip_address(string)
 
     def setServer(self, string):
         self.server = ipaddress.ip_address(string)
-
+    
     def getServerStr(self):
         return str(self.server)
 
@@ -49,11 +48,12 @@ class Config:
         server = self.getServerStr()
         radclient = Client(server=server, secret=self.secret, dict=Dictionary("dictionary"))
         self.pkt = radclient.CreateAcctPacket(code=pyrad.packet.AccountingRequest)
-
+    
     def setAccountingPkt(self, n):
         #self.pkt["User-Name"] = self.usernameBase + str(n)
         self.pkt["Calling-Station-Id"] = str(self.msisdnBase + n)
         self.pkt["Framed-IP-Address"] = self.getNextIpStr(n)
+        #self.pkt["Acct-Session-Id"]=str(self.msisdnBase + n)
         self.pkt["Acct-Session-Id"]=str(self.unique_id)+str(n).zfill(8)
 
     def setAccountingType(self, string):
@@ -76,10 +76,11 @@ async def send(udp, Config, n):
     Config.setAccountingType("Stop")
     pktStop = Config.pkt.RequestPacket()
 
-    time.sleep(usec)
+    if Config.noStart != True:
+        time.sleep(usec)
 
-    udp.sendto(pktStart, (server, 1813))
-    await asyncio.sleep(wait)
+        udp.sendto(pktStart, (server, 1813))
+        await asyncio.sleep(wait)
 
     if Config.noInterim != True:
         time.sleep(usec)
@@ -131,9 +132,10 @@ if __name__ == '__main__':
     parser.add_argument("-w", "--wait", type=int, default=1, help="timer to wait to send the next type of accounting packet (unit: 100 msec)")
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
     parser.add_argument("-p", "--secret", type=str, default="secret")
-    parser.add_argument("-m", "--msisdn", type=int, default="0123456789")
+    parser.add_argument("-m", "--msisdn", type=int, default="10000001")
     parser.add_argument("-sip", "--start", type=str, default="10.0.0.1")
 
+    parser.add_argument("-nst", "--nostart", action="store_true")
     parser.add_argument("-ni", "--nointerim", action="store_true")
     parser.add_argument("-ns", "--nostop", action="store_true")
 
@@ -146,6 +148,7 @@ if __name__ == '__main__':
     cnf.delay = args.delay
     cnf.wait = args.wait
     cnf.msisdnBase = args.msisdn
+    cnf.noStart = args.nostart
     cnf.noInterim = args.nointerim
     cnf.noStop = args.nostop
     cnf.loop = args.loop
@@ -153,8 +156,11 @@ if __name__ == '__main__':
     cnf.setSecret(args.secret)
     cnf.setStartIp(args.start)
     cnf.setPacket()
+    
+    Times = 0
 
-    Times = 1
+    if cnf.noStart == False:
+        Times += 1
     if cnf.noInterim == False:
         Times += 1
     if cnf.noStop == False:
