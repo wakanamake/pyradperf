@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 from pyrad.client import Client
 from pyrad.dictionary import Dictionary
 import pyrad.packet
@@ -133,7 +135,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", "--server", type=str, default="127.0.0.1")
     parser.add_argument("-p", "--secret", type=str, default="secret")
     parser.add_argument("-m", "--msisdn", type=int, default="10000001")
-    parser.add_argument("-sip", "--start", type=str, default="10.0.0.1")
+    parser.add_argument("-sip", "--startip", type=str, default="10.0.0.1")
 
     parser.add_argument("-nst", "--nostart", action="store_true")
     parser.add_argument("-ni", "--nointerim", action="store_true")
@@ -154,7 +156,7 @@ if __name__ == '__main__':
     cnf.loop = args.loop
     cnf.setServer(args.server)
     cnf.setSecret(args.secret)
-    cnf.setStartIp(args.start)
+    cnf.setStartIp(args.startip)
     cnf.setPacket()
     
     Times = 0
