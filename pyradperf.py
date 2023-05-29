@@ -55,7 +55,6 @@ class Config:
         #self.pkt["User-Name"] = self.usernameBase + str(n)
         self.pkt["Calling-Station-Id"] = str(self.msisdnBase + n)
         self.pkt["Framed-IP-Address"] = self.getNextIpStr(n)
-        #self.pkt["Acct-Session-Id"]=str(self.msisdnBase + n)
         self.pkt["Acct-Session-Id"]=str(self.unique_id)+str(n).zfill(8)
 
     def setAccountingType(self, string):
